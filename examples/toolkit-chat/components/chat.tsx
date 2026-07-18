@@ -1,7 +1,11 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, isToolUIPart } from "ai";
+import {
+  DefaultChatTransport,
+  isToolUIPart,
+  lastAssistantMessageIsCompleteWithApprovalResponses,
+} from "ai";
 import {
   Bot,
   Menu,
@@ -23,14 +27,44 @@ const prompts = [
 
 export function Chat() {
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
-  const { messages, sendMessage, status, stop, error, setMessages } = useChat({ transport });
+  const {
+    addToolApprovalResponse,
+    error,
+    messages,
+    sendMessage,
+    setMessages,
+    status,
+    stop,
+  } = useChat({
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
+    transport,
+  });
   const [input, setInput] = useState("");
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const isBusy = status === "submitted" || status === "streaming";
+  const latestMessage = messages.at(-1);
+  const latestPart = latestMessage?.parts.at(-1);
+  const hasStreamingText =
+    latestMessage?.role === "assistant" &&
+    latestPart?.type === "text" &&
+    latestPart.state === "streaming" &&
+    latestPart.text.length > 0;
+  const hasActiveTool =
+    latestPart &&
+    isToolUIPart(latestPart) &&
+    (latestPart.state === "input-streaming" ||
+      latestPart.state === "input-available" ||
+      latestPart.state === "approval-requested" ||
+      (latestPart.state === "approval-responded" && latestPart.approval.approved));
+  const showTyping = isBusy && !hasStreamingText && !hasActiveTool;
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const messagesElement = messagesRef.current;
+    messagesElement?.scrollTo({
+      behavior: "smooth",
+      top: messagesElement.scrollHeight,
+    });
   }, [messages, status]);
 
   function submit(event?: FormEvent, prompt = input) {
@@ -61,7 +95,7 @@ export function Chat() {
           </button>
         </header>
 
-        <div className="messages" aria-live="polite">
+        <div className="messages" aria-live="polite" ref={messagesRef}>
           {messages.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon"><Bot size={25} /></div>
@@ -84,15 +118,38 @@ export function Chat() {
                 <span className="message-author">{message.role === "user" ? "You" : "Toolkit"}</span>
                 {message.parts.map((part, index) => {
                   if (part.type === "text") return <p className="message-text" key={index}>{part.text}</p>;
-                  if (isToolUIPart(part)) return <ToolActivity part={part} key={part.toolCallId} />;
+                  if (isToolUIPart(part)) {
+                    return (
+                      <ToolActivity
+                        key={part.toolCallId}
+                        onApproval={(id, approved) =>
+                          void addToolApprovalResponse({ approved, id })
+                        }
+                        part={part}
+                      />
+                    );
+                  }
                   return null;
                 })}
               </div>
             </article>
           ))}
 
+          {showTyping ? (
+            <div className="message message-assistant typing-message" role="status" aria-label="Toolkit is typing">
+              <div className="message-avatar" aria-hidden="true"><Bot size={16} /></div>
+              <div className="message-content">
+                <span className="message-author">Toolkit</span>
+                <span className="typing-indicator" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </span>
+              </div>
+            </div>
+          ) : null}
+
           {error ? <div className="chat-error">{error.message}</div> : null}
-          <div ref={bottomRef} />
         </div>
 
         <div className="composer-wrap">

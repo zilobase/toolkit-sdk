@@ -43,6 +43,7 @@ test("creates AI SDK tools backed by Toolkit execution", async () => {
     "List repositories\nUse when: list GitHub repositories; show visible repos.",
   );
   assert.equal(generated.title, "List GitHub repos");
+  assert.equal(generated.needsApproval, false);
   assert.deepEqual(generated.metadata, {
     notelabToolkit: {
       access: "read",
@@ -65,6 +66,16 @@ test("creates AI SDK tools backed by Toolkit execution", async () => {
   assert.deepEqual(calls, [
     ["github.repositories/list", { owner: "notelab" }, "account_1"],
   ]);
+});
+
+test("requires approval before executing write tools", () => {
+  const tools = vercelProvider().createTools({
+    tools: [{ ...descriptor, access: "write" }],
+    userId: "user_1",
+    execute: async () => undefined,
+  });
+
+  assert.equal(tools.github_repositories_list.needsApproval, true);
 });
 
 test("leaves descriptions unchanged when no intent hints exist", () => {

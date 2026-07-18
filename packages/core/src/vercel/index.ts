@@ -39,6 +39,7 @@ export function vercelProvider(): ToolkitProvider<ToolSet> {
               toolId: descriptor.id,
             },
           },
+          needsApproval: descriptor.access === "write",
           title: descriptor.presentation.title,
           execute: (arguments_) =>
             execute(descriptor.id, arguments_, connectedAccountIds?.[0]),
