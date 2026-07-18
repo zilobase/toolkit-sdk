@@ -86,7 +86,7 @@ export class ConnectedAccountsResource {
         body: {
           userId,
           connectorId,
-          redirectUrl: options.redirectUrl,
+          redirectUrl: options.returnUrl ?? options.redirectUrl,
           read: options.read ?? "all",
           write: options.write ?? [],
           connectedAccountId: options.connectedAccountId,
@@ -177,10 +177,10 @@ export class ToolsResource<Provider extends ToolkitProvider | undefined> {
   ): Promise<ListResponse<ToolDescriptor> & { catalogVersion: string }> {
     const query = {
       userId,
-      connectors: selection.connectors ?? [],
+      connectors: selection.connectors,
       read: selection.read ?? "all",
       write: selection.write ?? [],
-      connectedAccountIds: selection.connectedAccountIds ?? [],
+      connectedAccountIds: selection.connectedAccountIds,
     };
     const cacheKey = JSON.stringify(query);
     const cached = this.catalogCache.get(cacheKey);

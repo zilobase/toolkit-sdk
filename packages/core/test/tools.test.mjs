@@ -46,24 +46,41 @@ test("queries normalized tool selections and revalidates cached catalogs", async
   });
 
   const first = await toolkit.tools.list("user_1");
-  const second = await toolkit.tools.list("user_1", {
-    connectors: [],
-    read: "all",
-    write: [],
-    connectedAccountIds: [],
-  });
+  const second = await toolkit.tools.list("user_1");
 
   assert.equal(requests.length, 2);
   assert.deepEqual(JSON.parse(requests[0].body), {
+    userId: "user_1",
+    read: "all",
+    write: [],
+  });
+  assert.equal(requests[0].headers["if-none-match"], undefined);
+  assert.equal(requests[1].headers["if-none-match"], '"catalog_1"');
+  assert.equal(second, first);
+});
+
+test("preserves explicit empty connector and account selections", async () => {
+  let requestBody;
+  const toolkit = new Toolkit({
+    apiKey: "project_key",
+    fetch: async (_input, init) => {
+      requestBody = JSON.parse(init.body);
+      return json({ catalogVersion: "catalog_1", items: [] });
+    },
+  });
+
+  await toolkit.tools.list("user_1", {
+    connectors: [],
+    connectedAccountIds: [],
+  });
+
+  assert.deepEqual(requestBody, {
     userId: "user_1",
     connectors: [],
     read: "all",
     write: [],
     connectedAccountIds: [],
   });
-  assert.equal(requests[0].headers["if-none-match"], undefined);
-  assert.equal(requests[1].headers["if-none-match"], '"catalog_1"');
-  assert.equal(second, first);
 });
 
 test("keeps catalog caches isolated by normalized selection", async () => {

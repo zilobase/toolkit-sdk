@@ -2,7 +2,7 @@ import { ToolkitError } from "ai-toolkit-sdk";
 
 import {
   getToolkit,
-  getToolkitRedirectUrl,
+  getToolkitReturnUrl,
   getToolkitUserId,
   getToolkitWriteTools,
 } from "@/lib/toolkit";
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       getToolkitUserId(),
       connectorId,
       {
-        redirectUrl: getToolkitRedirectUrl(),
+        returnUrl: getToolkitReturnUrl(request.url),
         read: "all",
         write: getToolkitWriteTools(connectorId),
       },

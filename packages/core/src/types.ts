@@ -33,13 +33,22 @@ export interface ToolSelection {
   connectedAccountIds?: string[];
 }
 
-export interface AuthorizeOptions {
-  redirectUrl: string;
+interface AuthorizeOptionsBase {
   read?: ToolReadSelection;
   write?: string[];
   connectedAccountId?: string;
   signal?: AbortSignal;
 }
+
+export type AuthorizeOptions = AuthorizeOptionsBase &
+  (
+    | { returnUrl: string; redirectUrl?: never }
+    | {
+        returnUrl?: never;
+        /** @deprecated Use returnUrl for the application destination. */
+        redirectUrl: string;
+      }
+  );
 
 export interface WaitForConnectionOptions {
   signal?: AbortSignal;

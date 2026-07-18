@@ -48,6 +48,7 @@ export function IntegrationsPanel({ open, onClose }: IntegrationsPanelProps) {
   const [pendingConnector, setPendingConnector] = useState<string>();
   const [disconnecting, setDisconnecting] = useState<string>();
   const pollRef = useRef<number>();
+  const popupRef = useRef<Window | null>(null);
 
   const load = useCallback(async (quiet = false) => {
     if (!quiet) setLoading(true);
@@ -75,7 +76,13 @@ export function IntegrationsPanel({ open, onClose }: IntegrationsPanelProps) {
   );
 
   async function connect(connectorId: string) {
-    const popup = window.open("", "toolkit-connect", "popup,width=560,height=720");
+    const popup = window.open(
+      "about:blank",
+      "toolkit-connect",
+      "popup,width=560,height=720",
+    );
+    popupRef.current = popup;
+    let popupNavigated = false;
     setPendingConnector(connectorId);
     setError(undefined);
 
@@ -87,8 +94,13 @@ export function IntegrationsPanel({ open, onClose }: IntegrationsPanelProps) {
       });
       const data = await readJson<{ redirectUrl: string }>(response);
 
-      if (popup) popup.location.href = data.redirectUrl;
-      else window.location.href = data.redirectUrl;
+      if (popup && !popup.closed) {
+        popup.location.href = data.redirectUrl;
+        popupNavigated = true;
+        popup.focus();
+      } else {
+        window.location.href = data.redirectUrl;
+      }
 
       const startedAt = Date.now();
       window.clearInterval(pollRef.current);
@@ -100,7 +112,8 @@ export function IntegrationsPanel({ open, onClose }: IntegrationsPanelProps) {
         }
       }, 2_000);
     } catch (connectError) {
-      popup?.close();
+      if (!popupNavigated) popup?.close();
+      popupRef.current = null;
       setError(connectError instanceof Error ? connectError.message : "Could not start authorization.");
       setPendingConnector(undefined);
     }
@@ -109,6 +122,7 @@ export function IntegrationsPanel({ open, onClose }: IntegrationsPanelProps) {
   useEffect(() => {
     if (pendingConnector && activeAccounts.has(pendingConnector)) {
       window.clearInterval(pollRef.current);
+      popupRef.current = null;
       setPendingConnector(undefined);
     }
   }, [activeAccounts, pendingConnector]);

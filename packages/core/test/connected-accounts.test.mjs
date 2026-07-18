@@ -41,7 +41,7 @@ test("creates authorization requests with stable access defaults", async () => {
   });
 
   const request = await toolkit.connectors.authorize("user_1", "gmail", {
-    redirectUrl: "https://app.example.com/integrations",
+    returnUrl: "https://app.example.com/integrations",
   });
 
   assert.ok(request instanceof ConnectionRequest);
@@ -59,6 +59,26 @@ test("creates authorization requests with stable access defaults", async () => {
     read: "all",
     write: [],
   });
+});
+
+test("accepts redirectUrl as a compatibility alias for returnUrl", async () => {
+  let capturedBody;
+  const toolkit = new Toolkit({
+    apiKey: "project_key",
+    fetch: async (_input, init) => {
+      capturedBody = JSON.parse(init.body);
+      return json(pendingRequest(), { status: 201 });
+    },
+  });
+
+  await toolkit.connectors.authorize("user_1", "gmail", {
+    redirectUrl: "https://app.example.com/legacy-return",
+  });
+
+  assert.equal(
+    capturedBody.redirectUrl,
+    "https://app.example.com/legacy-return",
+  );
 });
 
 test("manages user-scoped connected accounts", async () => {
@@ -123,7 +143,7 @@ test("polls an authorization request until an account becomes active", async () 
   });
 
   const request = await toolkit.connectedAccounts.authorize("user_1", "gmail", {
-    redirectUrl: "https://app.example.com/integrations",
+    returnUrl: "https://app.example.com/integrations",
   });
   const connected = await request.waitForConnection({ pollIntervalMs: 1 });
 
@@ -142,7 +162,7 @@ test("maps terminal connection states to structured errors", async (t) => {
           : json(pendingRequest(snapshot)),
     });
     return toolkit.connectedAccounts.authorize("user_1", "gmail", {
-      redirectUrl: "https://app.example.com/integrations",
+      returnUrl: "https://app.example.com/integrations",
     });
   }
 
@@ -186,7 +206,7 @@ test("distinguishes polling timeout from caller cancellation", async (t) => {
     const request = await pendingToolkit().connectedAccounts.authorize(
       "user_1",
       "gmail",
-      { redirectUrl: "https://app.example.com/integrations" },
+      { returnUrl: "https://app.example.com/integrations" },
     );
 
     await assert.rejects(
@@ -199,7 +219,7 @@ test("distinguishes polling timeout from caller cancellation", async (t) => {
     const request = await pendingToolkit().connectedAccounts.authorize(
       "user_1",
       "gmail",
-      { redirectUrl: "https://app.example.com/integrations" },
+      { returnUrl: "https://app.example.com/integrations" },
     );
     const controller = new AbortController();
     controller.abort(new Error("cancelled by user"));

@@ -35,9 +35,10 @@ export function getToolkitWriteTools(connectorId?: string) {
     : tools;
 }
 
-export function getToolkitRedirectUrl() {
+export function getToolkitReturnUrl(requestUrl: string) {
   return (
+    process.env.TOOLKIT_RETURN_URL?.trim() ||
     process.env.TOOLKIT_REDIRECT_URL?.trim() ||
-    "https://toolkit.notelab.io/settings/integrations"
+    new URL("/", requestUrl).toString()
   );
 }

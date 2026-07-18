@@ -41,7 +41,7 @@ polled from the server:
 
 ```ts
 const request = await toolkit.connectors.authorize("user_123", "gmail", {
-  redirectUrl: "https://app.example.com/integrations",
+  returnUrl: "https://app.example.com/integrations",
   read: "all",
   write: ["gmail.message.send"],
 });

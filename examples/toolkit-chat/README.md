@@ -22,8 +22,10 @@ Set these server-only values in `.env.local`:
   `https://toolkit.notelab.io/api/toolkit` endpoint.
 - `TOOLKIT_USER_ID`: stable application user identifier used to isolate
   connected accounts.
-- `TOOLKIT_REDIRECT_URL`: an exact OAuth return URL whose origin is allowlisted
-  for the Toolkit project. The hosted Toolkit settings page is the default.
+- `TOOLKIT_RETURN_URL`: optional fallback destination for full-page flows.
+  Popup flows complete and close on Toolkit. When omitted, the example derives
+  the application origin from the incoming request. The resulting origin must
+  be allowlisted for the Toolkit project.
 - `TOOLKIT_WRITE_TOOLS`: optional comma-separated write tool IDs. The example
   enables read tools by default and no write tools until explicitly configured.
 

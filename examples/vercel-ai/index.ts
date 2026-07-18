@@ -9,9 +9,9 @@ const toolkit = new Toolkit({
   provider: vercelProvider(),
 });
 
-export function authorizeGmail(userId: string, redirectUrl: string) {
+export function authorizeGmail(userId: string, returnUrl: string) {
   return toolkit.connectors.authorize(userId, "gmail", {
-    redirectUrl,
+    returnUrl,
     read: "all",
     write: [],
   });
