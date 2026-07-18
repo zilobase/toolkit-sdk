@@ -1,4 +1,5 @@
 export { Toolkit } from "./client.js";
+export { ConnectionRequest } from "./connection-request.js";
 export { ToolkitError } from "./errors.js";
 export type { ToolkitErrorOptions } from "./errors.js";
 export type {

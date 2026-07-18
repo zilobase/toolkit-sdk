@@ -1,6 +1,9 @@
+import { ConnectionRequest, type ConnectionRequestSnapshot } from "./connection-request.js";
 import { ToolkitError } from "./errors.js";
 import { Transport } from "./transport.js";
 import type {
+  AuthorizeOptions,
+  ConnectedAccount,
   Connector,
   ListResponse,
   PaginationOptions,
@@ -32,7 +35,10 @@ function normalizeBaseUrl(value: string): string {
 }
 
 export class ConnectorsResource {
-  constructor(private readonly transport: Transport) {}
+  constructor(
+    private readonly transport: Transport,
+    private readonly accounts: ConnectedAccountsResource,
+  ) {}
 
   list(options: PaginationOptions & RequestOptions = {}): Promise<ListResponse<Connector>> {
     return this.transport.request("/v1/connectors", {
@@ -50,10 +56,105 @@ export class ConnectorsResource {
       { signal: options.signal },
     );
   }
+
+  authorize(
+    userId: string,
+    connectorId: string,
+    options: AuthorizeOptions,
+  ): Promise<ConnectionRequest> {
+    return this.accounts.authorize(userId, connectorId, options);
+  }
+}
+
+export class ConnectedAccountsResource {
+  constructor(private readonly transport: Transport) {}
+
+  async authorize(
+    userId: string,
+    connectorId: string,
+    options: AuthorizeOptions,
+  ): Promise<ConnectionRequest> {
+    const snapshot = await this.transport.request<ConnectionRequestSnapshot>(
+      "/v1/connected-accounts/authorize",
+      {
+        method: "POST",
+        body: {
+          userId,
+          connectorId,
+          redirectUrl: options.redirectUrl,
+          read: options.read ?? "all",
+          write: options.write ?? [],
+          connectedAccountId: options.connectedAccountId,
+        },
+        signal: options.signal,
+      },
+    );
+
+    return new ConnectionRequest(this.transport, snapshot);
+  }
+
+  list(
+    userId: string,
+    options: PaginationOptions & RequestOptions & { connectorId?: string } = {},
+  ): Promise<ListResponse<ConnectedAccount>> {
+    return this.transport.request("/v1/connected-accounts", {
+      query: {
+        userId,
+        connectorId: options.connectorId,
+        cursor: options.cursor,
+        limit: options.limit,
+      },
+      signal: options.signal,
+    });
+  }
+
+  get(
+    connectedAccountId: string,
+    options: RequestOptions & { userId: string },
+  ): Promise<ConnectedAccount> {
+    return this.transport.request(
+      `/v1/connected-accounts/${encodeURIComponent(connectedAccountId)}`,
+      {
+        query: { userId: options.userId },
+        signal: options.signal,
+      },
+    );
+  }
+
+  setDefault(
+    connectedAccountId: string,
+    userId: string,
+    options: RequestOptions = {},
+  ): Promise<ConnectedAccount> {
+    return this.transport.request(
+      `/v1/connected-accounts/${encodeURIComponent(connectedAccountId)}/default`,
+      {
+        method: "PATCH",
+        body: { userId },
+        signal: options.signal,
+      },
+    );
+  }
+
+  async delete(
+    connectedAccountId: string,
+    userId: string,
+    options: RequestOptions = {},
+  ): Promise<void> {
+    await this.transport.requestDetailed(
+      `/v1/connected-accounts/${encodeURIComponent(connectedAccountId)}`,
+      {
+        method: "DELETE",
+        query: { userId },
+        signal: options.signal,
+      },
+    );
+  }
 }
 
 export class Toolkit<Provider extends ToolkitProvider | undefined = undefined> {
   readonly connectors: ConnectorsResource;
+  readonly connectedAccounts: ConnectedAccountsResource;
 
   constructor(options: ToolkitOptions<Provider>) {
     if (!options?.apiKey?.trim()) {
@@ -78,6 +179,7 @@ export class Toolkit<Provider extends ToolkitProvider | undefined = undefined> {
       options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     );
 
-    this.connectors = new ConnectorsResource(transport);
+    this.connectedAccounts = new ConnectedAccountsResource(transport);
+    this.connectors = new ConnectorsResource(transport, this.connectedAccounts);
   }
 }
