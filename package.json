@@ -7,11 +7,11 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace @notelab/toolkit",
+    "build": "npm run build --workspace @notelab/toolkit && npm run build --workspace @notelab/toolkit-vercel",
     "contract:generate": "openapi-typescript openapi/toolkit-v1.json -o packages/core/src/generated/api.ts",
     "contract:check": "node scripts/check-generated.mjs",
-    "typecheck": "npm run typecheck --workspace @notelab/toolkit",
-    "test": "npm run test --workspace @notelab/toolkit"
+    "typecheck": "npm run build --workspace @notelab/toolkit && npm run typecheck --workspace @notelab/toolkit && npm run typecheck --workspace @notelab/toolkit-vercel",
+    "test": "npm run test --workspace @notelab/toolkit && npm run test --workspace @notelab/toolkit-vercel"
   },
   "engines": {
     "node": ">=20"
