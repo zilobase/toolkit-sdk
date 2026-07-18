@@ -16,6 +16,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./protocol": {
+      "types": "./dist/generated/api.d.ts",
+      "default": "./dist/protocol.js"
     }
   },
   "scripts": {

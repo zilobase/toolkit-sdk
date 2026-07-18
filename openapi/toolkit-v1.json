@@ -1,0 +1,820 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "NoteLab Toolkit API",
+    "version": "1.0.0",
+    "description": "Server-only API for connector discovery, authorization, connected accounts, and tool execution."
+  },
+  "servers": [
+    {
+      "url": "https://toolkit.notelab.io/api/toolkit"
+    }
+  ],
+  "security": [
+    {
+      "projectApiKey": []
+    }
+  ],
+  "paths": {
+    "/v1/connectors": {
+      "get": {
+        "operationId": "listConnectors",
+        "responses": {
+          "200": {
+            "description": "Connector list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectorList"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/connectors/{connectorId}": {
+      "get": {
+        "operationId": "getConnector",
+        "parameters": [
+          {
+            "name": "connectorId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Connector",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connector"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/tools/query": {
+      "post": {
+        "operationId": "queryTools",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Selected tool catalog",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolQueryResponse"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Catalog selection has not changed"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/tools/{toolId}/execute": {
+      "post": {
+        "operationId": "executeTool",
+        "parameters": [
+          {
+            "name": "toolId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExecuteToolRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tool result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecuteToolResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/tools/search": {
+      "post": {
+        "operationId": "searchTools",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchToolsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Matching tools",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolList"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/connected-accounts/authorize": {
+      "post": {
+        "operationId": "authorizeConnectedAccount",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthorizeConnectedAccountRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Authorization request created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionRequest"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/connected-accounts": {
+      "get": {
+        "operationId": "listConnectedAccounts",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "connectorId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Connected account list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectedAccountList"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/connected-accounts/{connectedAccountId}": {
+      "get": {
+        "operationId": "getConnectedAccount",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ConnectedAccountId"
+          },
+          {
+            "$ref": "#/components/parameters/UserId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Connected account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectedAccount"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteConnectedAccount",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ConnectedAccountId"
+          },
+          {
+            "$ref": "#/components/parameters/UserId"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Connected account deleted"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/connected-accounts/{connectedAccountId}/default": {
+      "patch": {
+        "operationId": "setDefaultConnectedAccount",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ConnectedAccountId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userId"],
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated connected account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectedAccount"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/connection-requests/{requestId}": {
+      "get": {
+        "operationId": "getConnectionRequest",
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorization request state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionRequest"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "projectApiKey": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "parameters": {
+      "ConnectedAccountId": {
+        "name": "connectedAccountId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "UserId": {
+        "name": "userId",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "Toolkit API error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "JsonSchema": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "ToolAccess": {
+        "type": "string",
+        "enum": ["read", "write"]
+      },
+      "ConnectionRequestStatus": {
+        "type": "string",
+        "enum": ["pending", "active", "failed", "expired"]
+      },
+      "Connector": {
+        "type": "object",
+        "required": ["id", "name", "description", "authMethods"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "logoUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "authMethods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ConnectorList": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Connector"
+            }
+          },
+          "nextCursor": {
+            "type": "string"
+          }
+        }
+      },
+      "ToolDescriptor": {
+        "type": "object",
+        "required": [
+          "id",
+          "connectorId",
+          "name",
+          "description",
+          "access",
+          "intentPhrases",
+          "presentation",
+          "requiredScopes",
+          "inputSchema"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "connectorId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "access": {
+            "$ref": "#/components/schemas/ToolAccess"
+          },
+          "intentPhrases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "presentation": {
+            "$ref": "#/components/schemas/ToolPresentation"
+          },
+          "requiredScopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "inputSchema": {
+            "$ref": "#/components/schemas/JsonSchema"
+          }
+        }
+      },
+      "ToolPresentation": {
+        "type": "object",
+        "required": ["title", "progressPhrases"],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "progressPhrases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ToolList": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolDescriptor"
+            }
+          },
+          "nextCursor": {
+            "type": "string"
+          }
+        }
+      },
+      "ToolQuery": {
+        "type": "object",
+        "required": ["userId"],
+        "properties": {
+          "userId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "connectors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "read": {
+            "oneOf": [
+              {
+                "const": "all"
+              },
+              {
+                "const": false
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "default": "all"
+          },
+          "write": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "connectedAccountIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "ToolQueryResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ToolList"
+          },
+          {
+            "type": "object",
+            "required": ["catalogVersion"],
+            "properties": {
+              "catalogVersion": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "ExecuteToolRequest": {
+        "type": "object",
+        "required": ["userId", "arguments"],
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "arguments": true,
+          "connectedAccountId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ExecuteToolResponse": {
+        "type": "object",
+        "required": ["result"],
+        "properties": {
+          "result": true
+        }
+      },
+      "SearchToolsRequest": {
+        "type": "object",
+        "required": ["query", "userId"],
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1
+          },
+          "userId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "connectors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      },
+      "ConnectedAccount": {
+        "type": "object",
+        "required": [
+          "id",
+          "userId",
+          "connectorId",
+          "status",
+          "isDefault",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "connectorId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "expired", "revoked"]
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ConnectedAccountList": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConnectedAccount"
+            }
+          },
+          "nextCursor": {
+            "type": "string"
+          }
+        }
+      },
+      "AuthorizeConnectedAccountRequest": {
+        "type": "object",
+        "required": ["userId", "connectorId", "redirectUrl"],
+        "properties": {
+          "userId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "connectorId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "redirectUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "read": {
+            "oneOf": [
+              {
+                "const": "all"
+              },
+              {
+                "const": false
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "write": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "connectedAccountId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ConnectionRequest": {
+        "type": "object",
+        "required": ["id", "redirectUrl", "status", "expiresAt"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "redirectUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ConnectionRequestStatus"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "connectedAccount": {
+            "$ref": "#/components/schemas/ConnectedAccount"
+          },
+          "failure": {
+            "$ref": "#/components/schemas/ConnectionFailure"
+          }
+        }
+      },
+      "ConnectionFailure": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorEnvelope": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": true
+            }
+          }
+        }
+      }
+    }
+  }
+}
