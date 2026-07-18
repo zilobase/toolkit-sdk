@@ -5,11 +5,16 @@ import type {
   AuthorizeOptions,
   ConnectedAccount,
   Connector,
+  ExecuteToolOptions,
   ListResponse,
   PaginationOptions,
+  ProviderOutput,
   RequestOptions,
+  SearchToolsOptions,
   ToolkitOptions,
   ToolkitProvider,
+  ToolDescriptor,
+  ToolSelection,
 } from "./types.js";
 
 const DEFAULT_BASE_URL = "https://toolkit.notelab.io/api/toolkit";
@@ -152,9 +157,118 @@ export class ConnectedAccountsResource {
   }
 }
 
+interface CatalogCacheEntry {
+  etag?: string;
+  response: ListResponse<ToolDescriptor> & { catalogVersion: string };
+}
+
+export class ToolsResource<Provider extends ToolkitProvider | undefined> {
+  private readonly catalogCache = new Map<string, CatalogCacheEntry>();
+
+  constructor(
+    private readonly transport: Transport,
+    private readonly provider: Provider,
+  ) {}
+
+  async list(
+    userId: string,
+    selection: ToolSelection = {},
+    options: RequestOptions = {},
+  ): Promise<ListResponse<ToolDescriptor> & { catalogVersion: string }> {
+    const query = {
+      userId,
+      connectors: selection.connectors ?? [],
+      read: selection.read ?? "all",
+      write: selection.write ?? [],
+      connectedAccountIds: selection.connectedAccountIds ?? [],
+    };
+    const cacheKey = JSON.stringify(query);
+    const cached = this.catalogCache.get(cacheKey);
+    const response = await this.transport.requestDetailed<
+      ListResponse<ToolDescriptor> & { catalogVersion: string }
+    >("/v1/tools/query", {
+      method: "POST",
+      body: query,
+      headers: cached?.etag ? { "if-none-match": cached.etag } : undefined,
+      signal: options.signal,
+    });
+
+    if (response.status === 304 && cached) return cached.response;
+
+    if (!response.data) {
+      throw new ToolkitError("The Toolkit tool catalog response was empty.", {
+        code: "EMPTY_RESPONSE",
+        status: response.status,
+      });
+    }
+
+    this.catalogCache.set(cacheKey, {
+      etag: response.headers.get("etag") ?? undefined,
+      response: response.data,
+    });
+    return response.data;
+  }
+
+  async get(
+    userId: string,
+    selection: ToolSelection = {},
+    options: RequestOptions = {},
+  ): Promise<ProviderOutput<Provider>> {
+    const response = await this.list(userId, selection, options);
+    if (!this.provider) return response.items as ProviderOutput<Provider>;
+
+    return this.provider.createTools({
+      tools: response.items,
+      userId,
+      connectedAccountIds: selection.connectedAccountIds,
+      execute: (toolId, arguments_, connectedAccountId) =>
+        this.execute(toolId, {
+          userId,
+          arguments: arguments_,
+          connectedAccountId,
+          signal: options.signal,
+        }),
+    }) as ProviderOutput<Provider>;
+  }
+
+  async execute(toolId: string, options: ExecuteToolOptions): Promise<unknown> {
+    const response = await this.transport.request<{ result: unknown }>(
+      `/v1/tools/${encodeURIComponent(toolId)}/execute`,
+      {
+        method: "POST",
+        body: {
+          userId: options.userId,
+          arguments: options.arguments,
+          connectedAccountId: options.connectedAccountId,
+        },
+        signal: options.signal,
+      },
+    );
+
+    return response.result;
+  }
+
+  search(
+    query: string,
+    options: SearchToolsOptions,
+  ): Promise<ListResponse<ToolDescriptor>> {
+    return this.transport.request("/v1/tools/search", {
+      method: "POST",
+      body: {
+        query,
+        userId: options.userId,
+        connectors: options.connectors,
+        limit: options.limit,
+      },
+      signal: options.signal,
+    });
+  }
+}
+
 export class Toolkit<Provider extends ToolkitProvider | undefined = undefined> {
   readonly connectors: ConnectorsResource;
   readonly connectedAccounts: ConnectedAccountsResource;
+  readonly tools: ToolsResource<Provider>;
 
   constructor(options: ToolkitOptions<Provider>) {
     if (!options?.apiKey?.trim()) {
@@ -181,5 +295,6 @@ export class Toolkit<Provider extends ToolkitProvider | undefined = undefined> {
 
     this.connectedAccounts = new ConnectedAccountsResource(transport);
     this.connectors = new ConnectorsResource(transport, this.connectedAccounts);
+    this.tools = new ToolsResource(transport, options.provider as Provider);
   }
 }
