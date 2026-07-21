@@ -1,6 +1,6 @@
 {
   "name": "@zilobase/toolkit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Server-side TypeScript SDK for Zilobase Toolkit connectors and tools.",
   "type": "module",
   "license": "MIT",
@@ -23,6 +23,10 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "workerd": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
       "browser": {
         "types": "./dist/browser.d.ts",
         "default": "./dist/browser.js"
@@ -35,6 +39,10 @@
       "default": "./dist/protocol.js"
     },
     "./vercel": {
+      "workerd": {
+        "types": "./dist/vercel/index.d.ts",
+        "default": "./dist/vercel/index.js"
+      },
       "browser": {
         "types": "./dist/vercel/browser.d.ts",
         "default": "./dist/vercel/browser.js"
@@ -51,7 +59,7 @@
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --test test/*.test.mjs"
+    "test": "npm run build && node --test test/*.test.mjs && node --conditions=workerd --conditions=browser --test test/workerd-exports.test.mjs"
   },
   "engines": {
     "node": ">=20"
