@@ -1,10 +1,10 @@
-# `ai-toolkit-sdk`
+# `@zilobase/toolkit`
 
 Framework-neutral TypeScript client for the Zilobase Toolkit API. Use it only
 in trusted server runtimes because construction requires a project API key.
 
 ```ts
-import { Toolkit } from "ai-toolkit-sdk";
+import { Toolkit } from "@zilobase/toolkit";
 
 const toolkit = new Toolkit({
   apiKey: process.env.TOOLKIT_API_KEY!,
@@ -18,11 +18,11 @@ const tools = await toolkit.tools.get("user_123", {
 });
 ```
 
-The client defaults to `https://api.toolkit-sdk.dev`. Pass a full
-HTTP or HTTPS `baseUrl` for another deployment. An injected `fetch`, request
-timeout, and abort signals are supported for server runtime integration.
+The client always uses the live API at `https://api.toolkit-sdk.dev`. An
+injected `fetch`, request timeout, and abort signals are supported for server
+runtime integration.
 
-The `ai-toolkit-sdk/protocol` subpath exposes types generated from the public
+The `@zilobase/toolkit/protocol` subpath exposes types generated from the public
 OpenAPI contract. It does not expose backend implementation details.
 
 ## Vercel AI SDK
@@ -31,8 +31,8 @@ Install the optional `ai` peer dependency to convert Toolkit descriptors into
 Vercel AI SDK 6 tools:
 
 ```ts
-import { Toolkit } from "ai-toolkit-sdk";
-import { vercelProvider } from "ai-toolkit-sdk/vercel";
+import { Toolkit } from "@zilobase/toolkit";
+import { vercelProvider } from "@zilobase/toolkit/vercel";
 
 const toolkit = new Toolkit({
   apiKey: process.env.TOOLKIT_API_KEY!,
@@ -50,7 +50,7 @@ Browser UI code can read tool-call presentation data without loading the
 server adapter:
 
 ```ts
-import { getToolkitToolMetadata } from "ai-toolkit-sdk/vercel/metadata";
+import { getToolkitToolMetadata } from "@zilobase/toolkit/vercel/metadata";
 
 const metadata = getToolkitToolMetadata(part.toolMetadata);
 ```

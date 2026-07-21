@@ -1,9 +1,18 @@
 {
-  "name": "ai-toolkit-sdk",
+  "name": "@zilobase/toolkit",
   "version": "0.1.0",
   "description": "Server-side TypeScript SDK for Zilobase Toolkit connectors and tools.",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zilobase/toolkit-sdk.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/zilobase/toolkit-sdk#readme",
+  "bugs": {
+    "url": "https://github.com/zilobase/toolkit-sdk/issues"
+  },
   "sideEffects": false,
   "files": [
     "dist",

@@ -1,7 +1,7 @@
 import "server-only";
 
-import { Toolkit } from "ai-toolkit-sdk";
-import { vercelProvider } from "ai-toolkit-sdk/vercel";
+import { Toolkit } from "@zilobase/toolkit";
+import { vercelProvider } from "@zilobase/toolkit/vercel";
 
 let toolkit: Toolkit<ReturnType<typeof vercelProvider>> | undefined;
 
@@ -26,7 +26,6 @@ export function getToolkit() {
 
   toolkit ??= new Toolkit({
     apiKey,
-    baseUrl: process.env.TOOLKIT_BASE_URL,
     provider: vercelProvider(),
   });
 

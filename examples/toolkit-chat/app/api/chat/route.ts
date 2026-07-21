@@ -5,7 +5,7 @@ import {
   streamText,
   type UIMessage,
 } from "ai";
-import { ToolkitError } from "ai-toolkit-sdk";
+import { ToolkitError } from "@zilobase/toolkit";
 
 import {
   getToolkit,

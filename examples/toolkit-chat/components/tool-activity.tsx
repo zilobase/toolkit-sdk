@@ -6,7 +6,7 @@ import {
   type DynamicToolUIPart,
   type ToolUIPart,
 } from "ai";
-import { getToolkitToolMetadata } from "ai-toolkit-sdk/vercel/metadata";
+import { getToolkitToolMetadata } from "@zilobase/toolkit/vercel/metadata";
 
 type ToolActivityProps = {
   onApproval: (id: string, approved: boolean) => void;

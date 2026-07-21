@@ -1,6 +1,6 @@
 # Zilobase Toolkit SDK
 
-TypeScript clients for using a hosted or self-hosted Zilobase Toolkit backend
+TypeScript clients for using the hosted Zilobase Toolkit backend
 from trusted server runtimes. The SDK covers connector discovery, account
 authorization, tool selection, and tool execution without bundling connector
 credentials or provider clients.
@@ -8,31 +8,30 @@ credentials or provider clients.
 ## Install
 
 ```sh
-npm install ai-toolkit-sdk
+npm install @zilobase/toolkit
 ```
 
 Applications using Vercel AI SDK tools also need the adapter and its peer
 dependency:
 
 ```sh
-npm install ai-toolkit-sdk ai
+npm install @zilobase/toolkit ai
 ```
 
 ## Create a client
 
 ```ts
-import { Toolkit } from "ai-toolkit-sdk";
+import { Toolkit } from "@zilobase/toolkit";
 
 const toolkit = new Toolkit({
   apiKey: process.env.TOOLKIT_API_KEY!,
-  baseUrl: process.env.TOOLKIT_BASE_URL,
 });
 
 const connectors = await toolkit.connectors.list();
 ```
 
-The default hosted endpoint is `https://api.toolkit-sdk.dev`.
-Provide `baseUrl` only when using another deployment.
+The SDK always connects to the live Toolkit API at
+`https://api.toolkit-sdk.dev`.
 
 ## Authorize an account
 
@@ -79,8 +78,8 @@ exactly once; retry decisions remain with the application.
 ## Use Vercel AI SDK
 
 ```ts
-import { Toolkit } from "ai-toolkit-sdk";
-import { vercelProvider } from "ai-toolkit-sdk/vercel";
+import { Toolkit } from "@zilobase/toolkit";
+import { vercelProvider } from "@zilobase/toolkit/vercel";
 
 const toolkit = new Toolkit({
   apiKey: process.env.TOOLKIT_API_KEY!,
@@ -98,7 +97,7 @@ Backend-managed intent phrases help the model select tools. Presentation copy
 is kept out of prompts and is attached as AI SDK tool metadata for status UI:
 
 ```ts
-import { getToolkitToolMetadata } from "ai-toolkit-sdk/vercel/metadata";
+import { getToolkitToolMetadata } from "@zilobase/toolkit/vercel/metadata";
 
 const metadata = getToolkitToolMetadata(part.toolMetadata);
 const statusOptions = metadata?.presentation.progressPhrases;

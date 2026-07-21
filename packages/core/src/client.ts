@@ -17,27 +17,8 @@ import type {
   ToolSelection,
 } from "./types.js";
 
-const DEFAULT_BASE_URL = "https://api.toolkit-sdk.dev";
+const TOOLKIT_API_URL = "https://api.toolkit-sdk.dev";
 const DEFAULT_TIMEOUT_MS = 30_000;
-
-function normalizeBaseUrl(value: string): string {
-  let url: URL;
-  try {
-    url = new URL(value);
-  } catch {
-    throw new ToolkitError("baseUrl must be an absolute HTTP or HTTPS URL.", {
-      code: "INVALID_BASE_URL",
-    });
-  }
-
-  if (url.protocol !== "http:" && url.protocol !== "https:") {
-    throw new ToolkitError("baseUrl must use HTTP or HTTPS.", {
-      code: "INVALID_BASE_URL",
-    });
-  }
-
-  return value.replace(/\/+$/, "");
-}
 
 export class ConnectorsResource {
   constructor(
@@ -287,7 +268,7 @@ export class Toolkit<Provider extends ToolkitProvider | undefined = undefined> {
     }
 
     const transport = new Transport(
-      normalizeBaseUrl(options.baseUrl ?? DEFAULT_BASE_URL),
+      TOOLKIT_API_URL,
       options.apiKey,
       options.fetch,
       options.timeoutMs ?? DEFAULT_TIMEOUT_MS,

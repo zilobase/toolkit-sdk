@@ -1,11 +1,10 @@
-import { Toolkit } from "ai-toolkit-sdk";
-import { vercelProvider } from "ai-toolkit-sdk/vercel";
-import { getToolkitToolMetadata } from "ai-toolkit-sdk/vercel/metadata";
+import { Toolkit } from "@zilobase/toolkit";
+import { vercelProvider } from "@zilobase/toolkit/vercel";
+import { getToolkitToolMetadata } from "@zilobase/toolkit/vercel/metadata";
 import { streamText, type LanguageModel } from "ai";
 
 const toolkit = new Toolkit({
   apiKey: process.env.TOOLKIT_API_KEY!,
-  baseUrl: process.env.TOOLKIT_BASE_URL,
   provider: vercelProvider(),
 });
 

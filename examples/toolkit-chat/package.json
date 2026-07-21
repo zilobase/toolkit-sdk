@@ -15,7 +15,7 @@
     "@ai-sdk/openai": "^3.0.0",
     "@ai-sdk/react": "^3.0.0",
     "ai": "^6.0.0",
-    "ai-toolkit-sdk": "file:../../packages/core",
+    "@zilobase/toolkit": "file:../../packages/core",
     "lucide-react": "^0.468.0",
     "next": "^15.5.18",
     "react": "^18.3.1",

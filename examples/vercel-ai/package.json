@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "ai-toolkit-sdk": "*",
+    "@zilobase/toolkit": "*",
     "ai": "^6.0.193"
   }
 }

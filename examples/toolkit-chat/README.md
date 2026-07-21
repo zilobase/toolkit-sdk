@@ -1,6 +1,6 @@
 # Toolkit Chat
 
-A Next.js chat example using Vercel AI SDK 6 and the local `ai-toolkit-sdk`
+A Next.js chat example using Vercel AI SDK 6 and the local `@zilobase/toolkit`
 package. It is based on Vercel's `next-openai-telemetry` example with all
 OpenTelemetry dependencies and runtime instrumentation removed.
 
@@ -23,8 +23,6 @@ Set these server-only values in `.env.local`:
 - `OPENAI_MODEL`: OpenAI model used for chat and tool calls. It defaults to
   `gpt-4o-mini` for fast responses and tool-enabled conversations.
 - `TOOLKIT_API_KEY`: project API key created in the Toolkit dashboard.
-- `TOOLKIT_BASE_URL`: Toolkit API deployment. The default is the hosted
-  `https://api.toolkit-sdk.dev` endpoint.
 - `TOOLKIT_USER_ID`: stable application user identifier used to isolate
   connected accounts.
 - `TOOLKIT_RETURN_URL`: optional fallback destination for full-page flows.

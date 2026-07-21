@@ -1,5 +1,5 @@
 ---
-"ai-toolkit-sdk": patch
+"@zilobase/toolkit": patch
 ---
 
 Expose backend-managed intent phrases and presentation metadata on tool

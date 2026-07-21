@@ -63,7 +63,7 @@ export class Transport {
   private readonly fetch: FetchLike;
 
   constructor(
-    private readonly baseUrl: string,
+    private readonly endpoint: string,
     private readonly apiKey: string,
     fetchImplementation: FetchLike | undefined,
     private readonly timeoutMs: number,
@@ -96,7 +96,7 @@ export class Transport {
     path: string,
     config: RequestConfig = {},
   ): Promise<DetailedResponse<T>> {
-    const url = new URL(`${this.baseUrl}${path}`);
+    const url = new URL(`${this.endpoint}${path}`);
     for (const [name, value] of Object.entries(config.query ?? {})) {
       if (value !== undefined) url.searchParams.set(name, String(value));
     }

@@ -16,14 +16,6 @@ test("validates Toolkit constructor options", () => {
     (error) => error instanceof ToolkitError && error.code === "INVALID_API_KEY",
   );
   assert.throws(
-    () => new Toolkit({ apiKey: "secret", baseUrl: "/relative" }),
-    (error) => error instanceof ToolkitError && error.code === "INVALID_BASE_URL",
-  );
-  assert.throws(
-    () => new Toolkit({ apiKey: "secret", baseUrl: "ftp://toolkit.example.com" }),
-    /HTTP or HTTPS/,
-  );
-  assert.throws(
     () => new Toolkit({ apiKey: "secret", timeoutMs: 0 }),
     (error) => error instanceof ToolkitError && error.code === "INVALID_TIMEOUT",
   );
@@ -33,11 +25,10 @@ test("validates Toolkit constructor options", () => {
   );
 });
 
-test("lists connectors with pagination and a normalized base URL", async () => {
+test("lists connectors with pagination against the live Toolkit API", async () => {
   let captured;
   const toolkit = new Toolkit({
     apiKey: "project_key",
-    baseUrl: "https://toolkit.example.com/custom///",
     fetch: async (input, init) => {
       captured = { input: String(input), init };
       return json({ items: [], nextCursor: "cursor_2" });
@@ -49,7 +40,7 @@ test("lists connectors with pagination and a normalized base URL", async () => {
   assert.deepEqual(result, { items: [], nextCursor: "cursor_2" });
   assert.equal(
     captured.input,
-    "https://toolkit.example.com/custom/v1/connectors?cursor=cursor+1&limit=25",
+    "https://api.toolkit-sdk.dev/v1/connectors?cursor=cursor+1&limit=25",
   );
   assert.equal(captured.init.headers.authorization, "Bearer project_key");
 });

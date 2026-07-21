@@ -1,5 +1,5 @@
 {
-  "name": "ai-toolkit-sdk-workspace",
+  "name": "zilobase-toolkit-workspace",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace ai-toolkit-sdk",
+    "build": "npm run build --workspace @zilobase/toolkit",
     "changeset": "changeset",
     "ci": "npm run contract:check && npm run typecheck && npm test && npm run examples:check && npm run pack:check",
     "contract:generate": "openapi-typescript openapi/toolkit-v1.json -o packages/core/src/generated/api.ts",
@@ -15,8 +15,8 @@
     "examples:check": "tsc -p examples/vercel-ai/tsconfig.json --noEmit",
     "pack:check": "node scripts/check-packages.mjs",
     "release": "changeset publish",
-    "typecheck": "npm run typecheck --workspace ai-toolkit-sdk",
-    "test": "npm run test --workspace ai-toolkit-sdk",
+    "typecheck": "npm run typecheck --workspace @zilobase/toolkit",
+    "test": "npm run test --workspace @zilobase/toolkit",
     "version-packages": "changeset version"
   },
   "engines": {

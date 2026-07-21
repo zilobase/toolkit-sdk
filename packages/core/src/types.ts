@@ -96,7 +96,6 @@ export type FetchLike = (
 
 export interface ToolkitOptions<Provider extends ToolkitProvider | undefined = undefined> {
   apiKey: string;
-  baseUrl?: string;
   fetch?: FetchLike;
   timeoutMs?: number;
   provider?: Provider;
