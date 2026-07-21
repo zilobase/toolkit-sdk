@@ -23,6 +23,14 @@ test("validates Toolkit constructor options", () => {
     () => new Toolkit({ apiKey: "secret", timeoutMs: Number.POSITIVE_INFINITY }),
     (error) => error instanceof ToolkitError && error.code === "INVALID_TIMEOUT",
   );
+  assert.throws(
+    () => new Toolkit({ apiKey: "secret", baseUrl: "/api/toolkit" }),
+    (error) => error instanceof ToolkitError && error.code === "INVALID_BASE_URL",
+  );
+  assert.throws(
+    () => new Toolkit({ apiKey: "secret", baseUrl: "ftp://localhost:3100" }),
+    (error) => error instanceof ToolkitError && error.code === "INVALID_BASE_URL",
+  );
 });
 
 test("lists connectors with pagination against the live Toolkit API", async () => {
@@ -61,6 +69,22 @@ test("uses the hosted API URL by default", async () => {
     requestUrl,
     "https://api.toolkit-sdk.dev/v1/connectors",
   );
+});
+
+test("supports a normalized local API URL override", async () => {
+  let requestUrl;
+  const toolkit = new Toolkit({
+    apiKey: "project_key",
+    baseUrl: "http://localhost:3100///",
+    fetch: async (input) => {
+      requestUrl = String(input);
+      return json({ items: [] });
+    },
+  });
+
+  await toolkit.connectors.list();
+
+  assert.equal(requestUrl, "http://localhost:3100/v1/connectors");
 });
 
 test("gets connectors using an encoded identifier", async () => {

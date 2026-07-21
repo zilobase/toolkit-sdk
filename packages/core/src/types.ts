@@ -96,6 +96,8 @@ export type FetchLike = (
 
 export interface ToolkitOptions<Provider extends ToolkitProvider | undefined = undefined> {
   apiKey: string;
+  /** Overrides the hosted Toolkit API URL, primarily for local development. */
+  baseUrl?: string;
   fetch?: FetchLike;
   timeoutMs?: number;
   provider?: Provider;
