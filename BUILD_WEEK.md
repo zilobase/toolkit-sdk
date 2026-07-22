@@ -152,7 +152,7 @@ Judges do not need to rebuild the hosted platform.
    ```
 
 For local platform development and self-hosting, see the
-[Toolkit platform repository](https://github.com/sreeragh-s/toolkit).
+[Toolkit platform repository](https://github.com/sreeragh-s/mainlab).
 
 ## Demo video outline (under three minutes)
 
@@ -177,4 +177,3 @@ For local platform development and self-hosting, see the
 - Public YouTube demo is shorter than three minutes.
 - Demo audio explains both Codex and GPT-5.6 usage.
 - Toolkit `/feedback` session ID pasted into Devpost, not committed to Git.
-
