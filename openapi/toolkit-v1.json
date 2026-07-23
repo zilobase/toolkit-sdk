@@ -380,6 +380,96 @@
           }
         }
       }
+    },
+    "/v1/tool-router/search": {
+      "post": {
+        "operationId": "searchToolRouter",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouterSearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Semantically ranked compact tool matches",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouterSearchResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/tool-router/schemas": {
+      "post": {
+        "operationId": "getToolRouterSchemas",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouterSchemasRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Code-backed schemas for selected tools",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolList"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/tool-router/execute": {
+      "post": {
+        "operationId": "executeToolRouter",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouterExecuteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tool result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecuteToolResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -466,8 +556,113 @@
           "authMethods": {
             "type": "array",
             "items": {
+              "$ref": "#/components/schemas/ConnectorAuthMethod"
+            }
+          }
+        }
+      },
+      "ConnectorAuthMethod": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/OAuth2AuthMethod"
+          },
+          {
+            "$ref": "#/components/schemas/ApiKeyAuthMethod"
+          }
+        ]
+      },
+      "OAuth2AuthMethod": {
+        "type": "object",
+        "required": [
+          "kind",
+          "defaultScopes"
+        ],
+        "properties": {
+          "kind": {
+            "const": "oauth2"
+          },
+          "defaultScopes": {
+            "type": "array",
+            "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "ApiKeyAuthMethod": {
+        "type": "object",
+        "required": [
+          "kind",
+          "fields",
+          "placements"
+        ],
+        "properties": {
+          "kind": {
+            "const": "api-key"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiKeyCredentialField"
+            }
+          },
+          "placements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiKeyCredentialPlacement"
+            }
+          }
+        }
+      },
+      "ApiKeyCredentialField": {
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "secret"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "secret": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiKeyCredentialPlacement": {
+        "type": "object",
+        "required": [
+          "field",
+          "in",
+          "name"
+        ],
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "in": {
+            "type": "string",
+            "enum": [
+              "header",
+              "query",
+              "body"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "prefix": {
+            "type": "string"
           }
         }
       },
@@ -496,7 +691,8 @@
           "name",
           "description",
           "access",
-          "intentPhrases",
+          "exposure",
+          "annotations",
           "presentation",
           "requiredScopes",
           "inputSchema"
@@ -517,12 +713,6 @@
           "access": {
             "$ref": "#/components/schemas/ToolAccess"
           },
-          "intentPhrases": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
           "presentation": {
             "$ref": "#/components/schemas/ToolPresentation"
           },
@@ -534,6 +724,12 @@
           },
           "inputSchema": {
             "$ref": "#/components/schemas/JsonSchema"
+          },
+          "exposure": {
+            "$ref": "#/components/schemas/ToolExposure"
+          },
+          "annotations": {
+            "$ref": "#/components/schemas/ToolAnnotations"
           }
         }
       },
@@ -618,6 +814,14 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "exposure": {
+            "type": "string",
+            "enum": [
+              "all",
+              "core",
+              "extended"
+            ]
           }
         }
       },
@@ -699,6 +903,7 @@
           "id",
           "userId",
           "connectorId",
+          "authMethod",
           "status",
           "isDefault",
           "createdAt",
@@ -714,6 +919,20 @@
           },
           "connectorId": {
             "type": "string"
+          },
+          "authConfigId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "authMethod": {
+            "type": "string",
+            "enum": [
+              "oauth2",
+              "api-key"
+            ]
           },
           "status": {
             "type": "string",
@@ -757,8 +976,7 @@
         "type": "object",
         "required": [
           "userId",
-          "connectorId",
-          "redirectUrl"
+          "connectorId"
         ],
         "properties": {
           "userId": {
@@ -772,6 +990,10 @@
           "redirectUrl": {
             "type": "string",
             "format": "uri"
+          },
+          "authConfigId": {
+            "type": "string",
+            "format": "uuid"
           },
           "read": {
             "oneOf": [
@@ -804,10 +1026,7 @@
       "ConnectionRequest": {
         "type": "object",
         "required": [
-          "id",
-          "redirectUrl",
-          "status",
-          "expiresAt"
+          "status"
         ],
         "properties": {
           "id": {
@@ -869,6 +1088,164 @@
               },
               "details": true
             }
+          }
+        }
+      },
+      "ToolExposure": {
+        "type": "string",
+        "enum": [
+          "core",
+          "extended"
+        ]
+      },
+      "ToolAnnotations": {
+        "type": "object",
+        "required": [
+          "readOnlyHint",
+          "destructiveHint",
+          "idempotentHint",
+          "openWorldHint"
+        ],
+        "properties": {
+          "readOnlyHint": {
+            "type": "boolean"
+          },
+          "destructiveHint": {
+            "type": "boolean"
+          },
+          "idempotentHint": {
+            "type": "boolean"
+          },
+          "openWorldHint": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RouterSearchRequest": {
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1
+          },
+          "connectors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "exposure": {
+            "type": "string",
+            "enum": [
+              "all",
+              "core",
+              "extended"
+            ],
+            "default": "core"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "default": 6
+          }
+        }
+      },
+      "RouterToolMatch": {
+        "type": "object",
+        "required": [
+          "id",
+          "connectorId",
+          "name",
+          "title",
+          "description",
+          "access",
+          "exposure",
+          "annotations",
+          "score"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "connectorId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "access": {
+            "$ref": "#/components/schemas/ToolAccess"
+          },
+          "exposure": {
+            "$ref": "#/components/schemas/ToolExposure"
+          },
+          "annotations": {
+            "$ref": "#/components/schemas/ToolAnnotations"
+          },
+          "score": {
+            "type": "number"
+          }
+        }
+      },
+      "RouterSearchResponse": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouterToolMatch"
+            }
+          }
+        }
+      },
+      "RouterSchemasRequest": {
+        "type": "object",
+        "required": [
+          "toolIds"
+        ],
+        "properties": {
+          "toolIds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "RouterExecuteRequest": {
+        "type": "object",
+        "required": [
+          "toolId",
+          "userId",
+          "arguments"
+        ],
+        "properties": {
+          "toolId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "arguments": true,
+          "connectedAccountId": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       }

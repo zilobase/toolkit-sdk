@@ -5,11 +5,6 @@ function normalizeToolName(toolId: string): string {
   return toolId.replace(/[^a-zA-Z0-9_-]/g, "_");
 }
 
-function addIntentHints(description: string, intentPhrases: readonly string[]): string {
-  if (intentPhrases.length === 0) return description;
-  return `${description}\nUse when: ${intentPhrases.join("; ")}.`;
-}
-
 export function vercelProvider(): ToolkitProvider<ToolSet> {
   return {
     createTools({ tools, execute, connectedAccountIds }) {
@@ -22,15 +17,14 @@ export function vercelProvider(): ToolkitProvider<ToolSet> {
         }
 
         toolSet[name] = tool({
-          description: addIntentHints(
-            descriptor.description,
-            descriptor.intentPhrases,
-          ),
+          description: descriptor.description,
           inputSchema: jsonSchema(descriptor.inputSchema),
           metadata: {
             zilobaseToolkit: {
               access: descriptor.access,
+              annotations: descriptor.annotations,
               connectorId: descriptor.connectorId,
+              exposure: descriptor.exposure,
               presentation: {
                 progressPhrases: [...descriptor.presentation.progressPhrases],
                 title: descriptor.presentation.title,

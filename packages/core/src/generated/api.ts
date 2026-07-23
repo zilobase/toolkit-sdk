@@ -164,6 +164,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tool-router/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["searchToolRouter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tool-router/schemas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["getToolRouterSchemas"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tool-router/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["executeToolRouter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -181,7 +229,33 @@ export interface components {
             description: string;
             /** Format: uri */
             logoUrl?: string;
-            authMethods: string[];
+            authMethods: components["schemas"]["ConnectorAuthMethod"][];
+        };
+        ConnectorAuthMethod: components["schemas"]["OAuth2AuthMethod"] | components["schemas"]["ApiKeyAuthMethod"];
+        OAuth2AuthMethod: {
+            /** @constant */
+            kind: "oauth2";
+            defaultScopes: string[];
+        };
+        ApiKeyAuthMethod: {
+            /** @constant */
+            kind: "api-key";
+            fields: components["schemas"]["ApiKeyCredentialField"][];
+            placements: components["schemas"]["ApiKeyCredentialPlacement"][];
+        };
+        ApiKeyCredentialField: {
+            key: string;
+            label: string;
+            description?: string;
+            required?: boolean;
+            secret: boolean;
+        };
+        ApiKeyCredentialPlacement: {
+            field: string;
+            /** @enum {string} */
+            in: "header" | "query" | "body";
+            name: string;
+            prefix?: string;
         };
         ConnectorList: {
             items: components["schemas"]["Connector"][];
@@ -193,10 +267,11 @@ export interface components {
             name: string;
             description: string;
             access: components["schemas"]["ToolAccess"];
-            intentPhrases: string[];
             presentation: components["schemas"]["ToolPresentation"];
             requiredScopes: string[];
             inputSchema: components["schemas"]["JsonSchema"];
+            exposure: components["schemas"]["ToolExposure"];
+            annotations: components["schemas"]["ToolAnnotations"];
         };
         ToolPresentation: {
             title: string;
@@ -214,6 +289,8 @@ export interface components {
             /** @default [] */
             write: string[];
             connectedAccountIds?: string[];
+            /** @enum {string} */
+            exposure?: "all" | "core" | "extended";
         };
         ToolQueryResponse: components["schemas"]["ToolList"] & {
             catalogVersion: string;
@@ -238,6 +315,10 @@ export interface components {
             id: string;
             userId: string;
             connectorId: string;
+            /** Format: uuid */
+            authConfigId?: string | null;
+            /** @enum {string} */
+            authMethod: "oauth2" | "api-key";
             /** @enum {string} */
             status: "active" | "expired" | "revoked";
             isDefault: boolean;
@@ -254,7 +335,9 @@ export interface components {
             userId: string;
             connectorId: string;
             /** Format: uri */
-            redirectUrl: string;
+            redirectUrl?: string;
+            /** Format: uuid */
+            authConfigId?: string;
             read?: "all" | false | string[];
             write?: string[];
             /** Format: uuid */
@@ -262,12 +345,12 @@ export interface components {
         };
         ConnectionRequest: {
             /** Format: uuid */
-            id: string;
+            id?: string;
             /** Format: uri */
-            redirectUrl: string;
+            redirectUrl?: string;
             status: components["schemas"]["ConnectionRequestStatus"];
             /** Format: date-time */
-            expiresAt: string;
+            expiresAt?: string;
             connectedAccount?: components["schemas"]["ConnectedAccount"];
             failure?: components["schemas"]["ConnectionFailure"];
         };
@@ -281,6 +364,49 @@ export interface components {
                 message: string;
                 details?: unknown;
             };
+        };
+        /** @enum {string} */
+        ToolExposure: "core" | "extended";
+        ToolAnnotations: {
+            readOnlyHint: boolean;
+            destructiveHint: boolean;
+            idempotentHint: boolean;
+            openWorldHint: boolean;
+        };
+        RouterSearchRequest: {
+            query: string;
+            connectors?: string[];
+            /**
+             * @default core
+             * @enum {string}
+             */
+            exposure: "all" | "core" | "extended";
+            /** @default 6 */
+            limit: number;
+        };
+        RouterToolMatch: {
+            id: string;
+            connectorId: string;
+            name: string;
+            title: string;
+            description: string;
+            access: components["schemas"]["ToolAccess"];
+            exposure: components["schemas"]["ToolExposure"];
+            annotations: components["schemas"]["ToolAnnotations"];
+            score: number;
+        };
+        RouterSearchResponse: {
+            items: components["schemas"]["RouterToolMatch"][];
+        };
+        RouterSchemasRequest: {
+            toolIds: string[];
+        };
+        RouterExecuteRequest: {
+            toolId: string;
+            userId: string;
+            arguments: unknown;
+            /** Format: uuid */
+            connectedAccountId?: string;
         };
     };
     responses: {
@@ -579,6 +705,81 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConnectionRequest"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    searchToolRouter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RouterSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Semantically ranked compact tool matches */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RouterSearchResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getToolRouterSchemas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RouterSchemasRequest"];
+            };
+        };
+        responses: {
+            /** @description Code-backed schemas for selected tools */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolList"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    executeToolRouter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RouterExecuteRequest"];
+            };
+        };
+        responses: {
+            /** @description Tool result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExecuteToolResponse"];
                 };
             };
             default: components["responses"]["Error"];

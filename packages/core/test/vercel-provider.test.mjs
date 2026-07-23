@@ -5,8 +5,15 @@ import { vercelProvider } from "../dist/vercel/index.js";
 
 const descriptor = {
   access: "read",
+  annotations: {
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: true,
+    readOnlyHint: true,
+  },
   connectorId: "github",
   description: "List repositories",
+  exposure: "core",
   id: "github.repositories/list",
   inputSchema: {
     type: "object",
@@ -14,7 +21,6 @@ const descriptor = {
     required: ["owner"],
   },
   name: "listRepositories",
-  intentPhrases: ["list GitHub repositories", "show visible repos"],
   presentation: {
     progressPhrases: [
       "Listing GitHub repositories",
@@ -40,14 +46,16 @@ test("creates AI SDK tools backed by Toolkit execution", async () => {
   const generated = tools.github_repositories_list;
   assert.equal(
     generated.description,
-    "List repositories\nUse when: list GitHub repositories; show visible repos.",
+    "List repositories",
   );
   assert.equal(generated.title, "List GitHub repos");
   assert.equal(generated.needsApproval, false);
   assert.deepEqual(generated.metadata, {
     zilobaseToolkit: {
       access: "read",
+      annotations: descriptor.annotations,
       connectorId: "github",
+      exposure: "core",
       presentation: {
         progressPhrases: [
           "Listing GitHub repositories",
@@ -78,9 +86,9 @@ test("requires approval before executing write tools", () => {
   assert.equal(tools.github_repositories_list.needsApproval, true);
 });
 
-test("leaves descriptions unchanged when no intent hints exist", () => {
+test("leaves canonical descriptions unchanged", () => {
   const tools = vercelProvider().createTools({
-    tools: [{ ...descriptor, id: "github.repositories.list", intentPhrases: [] }],
+    tools: [{ ...descriptor, id: "github.repositories.list" }],
     userId: "user_1",
     execute: async () => undefined,
   });

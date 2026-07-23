@@ -9,7 +9,14 @@ import {
 const validMetadata = {
   zilobaseToolkit: {
     access: "read",
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+      readOnlyHint: true,
+    },
     connectorId: "gmail",
+    exposure: "core",
     presentation: {
       progressPhrases: ["Opening the Gmail message"],
       title: "Read Gmail message",

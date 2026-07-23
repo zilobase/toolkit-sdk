@@ -110,15 +110,18 @@ const toolkit = new Toolkit({
   provider: vercelProvider(),
 });
 
-const tools = await toolkit.tools.get("user_123", {
-  connectors: ["gmail"],
-  read: "all",
-  write: [],
+const tools = await toolkit.router.get("user_123", {
+  connectors: ["gmail", "google-calendar"],
 });
 ```
 
-Backend-managed intent phrases help the model select tools. Presentation copy
-is kept out of prompts and is attached as AI SDK tool metadata for status UI:
+The recommended router surface contains exactly three model tools: semantic
+catalog search, schema retrieval, and policy-checked execution. This avoids
+placing thousands of provider schemas in the prompt. Up to 20 known direct
+tools can be preloaded with `preload: ["gmail.users.messages.send"]`.
+
+Tool exposure and MCP-aligned annotations are attached as AI SDK metadata,
+alongside presentation copy for status UI:
 
 ```ts
 import { getToolkitToolMetadata } from "@zilobase/toolkit/vercel/metadata";

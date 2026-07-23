@@ -10,10 +10,14 @@ import type {
   PaginationOptions,
   ProviderOutput,
   RequestOptions,
+  RouterGetOptions,
+  RouterProviderOutput,
+  RouterSearchOptions,
   SearchToolsOptions,
   ToolkitOptions,
   ToolkitProvider,
   ToolDescriptor,
+  ToolRouterMatch,
   ToolSelection,
 } from "./types.js";
 
@@ -178,6 +182,7 @@ export class ToolsResource<Provider extends ToolkitProvider | undefined> {
     const query = {
       userId,
       connectors: selection.connectors,
+      exposure: selection.exposure,
       read: selection.read ?? "all",
       write: selection.write ?? [],
       connectedAccountIds: selection.connectedAccountIds,
@@ -265,9 +270,228 @@ export class ToolsResource<Provider extends ToolkitProvider | undefined> {
   }
 }
 
+const ROUTER_TOOL_DESCRIPTORS: ToolDescriptor[] = [
+  {
+    access: "read",
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+      readOnlyHint: true,
+    },
+    connectorId: "toolkit",
+    description:
+      "Semantically search the Toolkit catalog and return compact ranked tool matches. Use this before requesting schemas.",
+    exposure: "core",
+    id: "toolkit.router.search",
+    inputSchema: {
+      additionalProperties: false,
+      properties: {
+        connectors: { items: { type: "string" }, type: "array" },
+        exposure: { enum: ["all", "core", "extended"], type: "string" },
+        limit: { maximum: 20, minimum: 1, type: "integer" },
+        query: { minLength: 1, type: "string" },
+      },
+      required: ["query"],
+      type: "object",
+    },
+    name: "toolkitRouterSearch",
+    presentation: {
+      progressPhrases: ["Searching the Toolkit catalog"],
+      title: "Search Toolkit tools",
+    },
+    requiredScopes: [],
+  },
+  {
+    access: "read",
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+      readOnlyHint: true,
+    },
+    connectorId: "toolkit",
+    description:
+      "Retrieve code-backed input schemas for up to 20 selected Toolkit tool IDs.",
+    exposure: "core",
+    id: "toolkit.router.schemas",
+    inputSchema: {
+      additionalProperties: false,
+      properties: {
+        toolIds: {
+          items: { type: "string" },
+          maxItems: 20,
+          minItems: 1,
+          type: "array",
+        },
+      },
+      required: ["toolIds"],
+      type: "object",
+    },
+    name: "toolkitRouterSchemas",
+    presentation: {
+      progressPhrases: ["Loading Toolkit tool schemas"],
+      title: "Get Toolkit tool schemas",
+    },
+    requiredScopes: [],
+  },
+  {
+    access: "write",
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+      readOnlyHint: false,
+    },
+    connectorId: "toolkit",
+    description:
+      "Execute a selected Toolkit tool by ID after inspecting its schema. Project write and destructive policies are enforced by the server.",
+    exposure: "core",
+    id: "toolkit.router.execute",
+    inputSchema: {
+      additionalProperties: false,
+      properties: {
+        arguments: {},
+        connectedAccountId: { format: "uuid", type: "string" },
+        toolId: { minLength: 1, type: "string" },
+      },
+      required: ["toolId", "arguments"],
+      type: "object",
+    },
+    name: "toolkitRouterExecute",
+    presentation: {
+      progressPhrases: ["Executing the selected Toolkit tool"],
+      title: "Execute Toolkit tool",
+    },
+    requiredScopes: [],
+  },
+];
+
+export class ToolRouterResource<Provider extends ToolkitProvider | undefined> {
+  constructor(
+    private readonly transport: Transport,
+    private readonly tools: ToolsResource<Provider>,
+    private readonly provider: Provider,
+  ) {}
+
+  async search(
+    query: string,
+    options: RouterSearchOptions = {},
+  ): Promise<ListResponse<ToolRouterMatch>> {
+    return this.transport.request("/v1/tool-router/search", {
+      body: {
+        connectors: options.connectors,
+        exposure: options.exposure ?? "core",
+        limit: options.limit ?? 6,
+        query,
+      },
+      method: "POST",
+      signal: options.signal,
+    });
+  }
+
+  async schemas(
+    toolIds: string[],
+    options: RequestOptions = {},
+  ): Promise<ListResponse<ToolDescriptor>> {
+    if (toolIds.length < 1 || toolIds.length > 20) {
+      throw new ToolkitError("toolIds must contain between 1 and 20 tools.", {
+        code: "INVALID_TOOL_SELECTION",
+      });
+    }
+    return this.transport.request("/v1/tool-router/schemas", {
+      body: { toolIds },
+      method: "POST",
+      signal: options.signal,
+    });
+  }
+
+  async execute(toolId: string, options: ExecuteToolOptions): Promise<unknown> {
+    const response = await this.transport.request<{ result: unknown }>(
+      "/v1/tool-router/execute",
+      {
+        body: {
+          arguments: options.arguments,
+          connectedAccountId: options.connectedAccountId,
+          toolId,
+          userId: options.userId,
+        },
+        method: "POST",
+        signal: options.signal,
+      },
+    );
+    return response.result;
+  }
+
+  async get(
+    userId: string,
+    options: RouterGetOptions = {},
+  ): Promise<RouterProviderOutput<Provider>> {
+    const preload = [...new Set(options.preload ?? [])];
+    if (preload.length > 20) {
+      throw new ToolkitError("Router preloads are limited to 20 direct tools.", {
+        code: "INVALID_TOOL_SELECTION",
+      });
+    }
+    const direct = preload.length
+      ? (await this.schemas(preload, options)).items
+      : [];
+    const descriptors = [...ROUTER_TOOL_DESCRIPTORS, ...direct];
+    if (!this.provider) return descriptors as RouterProviderOutput<Provider>;
+
+    return this.provider.createTools({
+      connectedAccountIds: options.connectedAccountIds,
+      execute: (toolId, arguments_, connectedAccountId) => {
+        const input = arguments_ as Record<string, unknown>;
+        if (toolId === "toolkit.router.search") {
+          return this.search(String(input.query ?? ""), {
+            connectors: Array.isArray(input.connectors)
+              ? input.connectors.map(String)
+              : options.connectors,
+            exposure:
+              input.exposure === "all" ||
+              input.exposure === "core" ||
+              input.exposure === "extended"
+                ? input.exposure
+                : options.exposure,
+            limit: typeof input.limit === "number" ? input.limit : options.limit,
+            signal: options.signal,
+          });
+        }
+        if (toolId === "toolkit.router.schemas") {
+          return this.schemas(
+            Array.isArray(input.toolIds) ? input.toolIds.map(String) : [],
+            options,
+          );
+        }
+        if (toolId === "toolkit.router.execute") {
+          return this.execute(String(input.toolId ?? ""), {
+            arguments: input.arguments,
+            connectedAccountId:
+              typeof input.connectedAccountId === "string"
+                ? input.connectedAccountId
+                : connectedAccountId,
+            signal: options.signal,
+            userId,
+          });
+        }
+        return this.tools.execute(toolId, {
+          arguments: arguments_,
+          connectedAccountId,
+          signal: options.signal,
+          userId,
+        });
+      },
+      tools: descriptors,
+      userId,
+    }) as RouterProviderOutput<Provider>;
+  }
+}
+
 export class Toolkit<Provider extends ToolkitProvider | undefined = undefined> {
   readonly connectors: ConnectorsResource;
   readonly connectedAccounts: ConnectedAccountsResource;
+  readonly router: ToolRouterResource<Provider>;
   readonly tools: ToolsResource<Provider>;
 
   constructor(options: ToolkitOptions<Provider>) {
@@ -296,5 +520,10 @@ export class Toolkit<Provider extends ToolkitProvider | undefined = undefined> {
     this.connectedAccounts = new ConnectedAccountsResource(transport);
     this.connectors = new ConnectorsResource(transport, this.connectedAccounts);
     this.tools = new ToolsResource(transport, options.provider as Provider);
+    this.router = new ToolRouterResource(
+      transport,
+      this.tools,
+      options.provider as Provider,
+    );
   }
 }

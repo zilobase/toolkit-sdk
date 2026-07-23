@@ -2,6 +2,6 @@
 "@zilobase/toolkit": patch
 ---
 
-Expose backend-managed intent phrases and presentation metadata on tool
-descriptors, include a Vercel AI SDK adapter, and propagate browser-safe
-progress metadata through AI SDK tool calls.
+Add the three-tool semantic router, Core/Extended exposure, MCP-aligned tool
+annotations, and browser-safe presentation metadata. Remove intent-phrase
+payloads and keep direct tool selection available for compatibility.

@@ -40,12 +40,13 @@ const toolkit = new Toolkit({
   provider: vercelProvider(),
 });
 
-const tools = await toolkit.tools.get("user_123", {
+const tools = await toolkit.router.get("user_123", {
   connectors: ["github"],
-  read: "all",
-  write: [],
 });
 ```
+
+The router exposes exactly three model tools for semantic search, schema
+retrieval, and execution. Use `preload` to add at most 20 known direct tools.
 
 Browser UI code can read tool-call presentation data without loading the
 server adapter:

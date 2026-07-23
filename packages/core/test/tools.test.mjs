@@ -9,7 +9,13 @@ const descriptor = {
   name: "createGithubIssue",
   description: "Create an issue in a GitHub repository.",
   access: "write",
-  intentPhrases: ["open a bug report"],
+  annotations: {
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: true,
+    readOnlyHint: false,
+  },
+  exposure: "core",
   presentation: {
     title: "Create GitHub issue",
     progressPhrases: ["Preparing the GitHub issue"],
@@ -209,7 +215,7 @@ test("searches tools and preserves discovery metadata", async () => {
     connectors: ["github"],
     limit: 5,
   });
-  assert.deepEqual(result.items[0].intentPhrases, ["open a bug report"]);
+  assert.equal(result.items[0].exposure, "core");
   assert.deepEqual(result.items[0].presentation, {
     title: "Create GitHub issue",
     progressPhrases: ["Preparing the GitHub issue"],
@@ -228,4 +234,52 @@ test("rejects an unexpected empty catalog response", async () => {
     assert.equal(error.status, 304);
     return true;
   });
+});
+
+test("provides exactly three router tools and delegates compact routing calls", async () => {
+  let context;
+  const requests = [];
+  const toolkit = new Toolkit({
+    apiKey: "project_key",
+    provider: {
+      createTools(value) {
+        context = value;
+        return Object.fromEntries(value.tools.map((tool) => [tool.id, tool]));
+      },
+    },
+    fetch: async (input, init) => {
+      requests.push({ body: JSON.parse(init.body), url: String(input) });
+      return json({ items: [] });
+    },
+  });
+
+  const tools = await toolkit.router.get("user_1");
+  assert.deepEqual(Object.keys(tools), [
+    "toolkit.router.search",
+    "toolkit.router.schemas",
+    "toolkit.router.execute",
+  ]);
+  await context.execute("toolkit.router.search", {
+    query: "find calendar availability",
+  });
+  assert.equal(
+    requests[0].url,
+    "https://api.toolkit-sdk.dev/v1/tool-router/search",
+  );
+  assert.deepEqual(requests[0].body, {
+    query: "find calendar availability",
+    exposure: "core",
+    limit: 6,
+  });
+});
+
+test("limits router direct-tool preloads to 20", async () => {
+  const toolkit = new Toolkit({ apiKey: "project_key", fetch: async () => json({ items: [] }) });
+  await assert.rejects(
+    toolkit.router.get("user_1", {
+      preload: Array.from({ length: 21 }, (_, index) => `tool.${index}`),
+    }),
+    (error) =>
+      error instanceof ToolkitError && error.code === "INVALID_TOOL_SELECTION",
+  );
 });

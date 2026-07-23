@@ -8,6 +8,9 @@ export type ConnectionRequestStatus = Schemas["ConnectionRequestStatus"];
 export type ToolDescriptor = Schemas["ToolDescriptor"];
 export type ToolPresentation = Schemas["ToolPresentation"];
 export type ToolAccess = Schemas["ToolAccess"];
+export type ToolAnnotations = Schemas["ToolAnnotations"];
+export type ToolExposure = Schemas["ToolExposure"];
+export type ToolRouterMatch = Schemas["RouterToolMatch"];
 export type JsonSchema = Schemas["JsonSchema"];
 
 export interface RequestOptions {
@@ -28,6 +31,7 @@ export type ToolReadSelection = "all" | string[] | false;
 
 export interface ToolSelection {
   connectors?: string[];
+  exposure?: "all" | ToolExposure;
   read?: ToolReadSelection;
   write?: string[];
   connectedAccountIds?: string[];
@@ -70,6 +74,17 @@ export interface SearchToolsOptions {
   signal?: AbortSignal;
 }
 
+export interface RouterSearchOptions extends RequestOptions {
+  connectors?: string[];
+  exposure?: "all" | ToolExposure;
+  limit?: number;
+}
+
+export interface RouterGetOptions extends RouterSearchOptions {
+  connectedAccountIds?: string[];
+  preload?: string[];
+}
+
 export interface ProviderContext {
   tools: ToolDescriptor[];
   userId: string;
@@ -88,6 +103,9 @@ export interface ToolkitProvider<Output = unknown> {
 export type ProviderOutput<Provider> = Provider extends ToolkitProvider<infer Output>
   ? Output
   : ToolDescriptor[];
+
+export type RouterProviderOutput<Provider> =
+  Provider extends ToolkitProvider<infer Output> ? Output : ToolDescriptor[];
 
 export type FetchLike = (
   input: RequestInfo | URL,

@@ -2,7 +2,14 @@ export const TOOLKIT_TOOL_METADATA_KEY = "zilobaseToolkit";
 
 export type ToolkitToolMetadata = {
   access: "read" | "write";
+  annotations: {
+    destructiveHint: boolean;
+    idempotentHint: boolean;
+    openWorldHint: boolean;
+    readOnlyHint: boolean;
+  };
   connectorId: string;
+  exposure: "core" | "extended";
   presentation: {
     progressPhrases: string[];
     title: string;
@@ -27,6 +34,20 @@ export function getToolkitToolMetadata(
   const candidate = toolMetadata[TOOLKIT_TOOL_METADATA_KEY];
   if (!isRecord(candidate) || candidate.schemaVersion !== 1) return undefined;
   if (candidate.access !== "read" && candidate.access !== "write") {
+    return undefined;
+  }
+  if (candidate.exposure !== "core" && candidate.exposure !== "extended") {
+    return undefined;
+  }
+  if (
+    !isRecord(candidate.annotations) ||
+    ![
+      candidate.annotations.destructiveHint,
+      candidate.annotations.idempotentHint,
+      candidate.annotations.openWorldHint,
+      candidate.annotations.readOnlyHint,
+    ].every((value) => typeof value === "boolean")
+  ) {
     return undefined;
   }
   if (
